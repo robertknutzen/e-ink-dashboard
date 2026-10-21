@@ -2,15 +2,46 @@
 
 A conky-style dashboard for the Waveshare 7.5" e-paper (GDEY075T7, 800×480, black/white) on the Waveshare ESP32 driver board. A text config file decides what is drawn and where the data comes from. The file lives on the ESP32, and you edit it in a browser at **http://eink.local/** (or the board's IP address). Press **Save** and the screen updates. No reflashing needed.
 
+## Hardware
+
+- **Display:** Waveshare 7.5" e-Paper, 800×480 black/white. The driver class is `GxEPD2_750_GDEY075T7`. A different panel means changing the driver class in `render.cpp`.
+- **Board:** Waveshare E-Paper ESP32 Driver Board (tested on Rev3, USB-C). The display pins are set in `render.cpp`: CS=15, DC=27, RST=26, BUSY=25, SCK=13, MOSI=14.
+- **Board switches:** switch 2 (serial port power) must be **ON** to upload. Leave switch 1 (display config) where the image looks clean.
+- **Power:** keep it on USB. The board stays awake to serve the editor.
+
 ## Build and flash
 
+Tested with: ESP32 Arduino core 3.2.0, GxEPD2 1.6.4, Adafruit GFX 1.17.0, ArduinoJson 7.4.1.
+
+**With [arduino-cli](https://arduino.github.io/arduino-cli/)**, from the folder that *contains* `eink-dash/` (the repo root):
+
 ```sh
-cp secrets.example.h secrets.h      # put your Wi-Fi details in it (or use setup mode, below)
+# one-time setup
+arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+arduino-cli core update-index
+arduino-cli core install esp32:esp32
+arduino-cli lib install GxEPD2 "Adafruit GFX Library" ArduinoJson
+
+# Wi-Fi (or skip this and use setup mode, below)
+cp eink-dash/secrets.example.h eink-dash/secrets.h   # then edit it
+
+# build and upload
+arduino-cli board list                               # find your port
 arduino-cli compile --fqbn esp32:esp32:esp32:PartitionScheme=no_ota eink-dash
 arduino-cli upload  --fqbn esp32:esp32:esp32:PartitionScheme=no_ota -p /dev/ttyACM0 eink-dash
 ```
 
-The `no_ota` partition scheme is required because the firmware is too big for the default one. In the Arduino IDE, choose *Tools → Partition Scheme → No OTA (2MB APP/2MB SPIFFS)*. Libraries: GxEPD2, Adafruit GFX, ArduinoJson 7.
+**With the Arduino IDE:**
+1. Add the ESP32 boards URL above under *File → Preferences → Additional boards manager URLs*.
+2. Install **esp32** by Espressif in the Boards Manager, and **GxEPD2**, **Adafruit GFX Library** and **ArduinoJson** in the Library Manager.
+3. Open `eink-dash/eink-dash.ino`. The folder name has to stay `eink-dash`.
+4. Choose *Tools → Board → ESP32 Dev Module*, then *Tools → Partition Scheme → No OTA (2MB APP/2MB SPIFFS)*, then Upload.
+
+**Notes:**
+- **Partition scheme:** `no_ota` is required. The firmware is about 1.4 MB, which doesn't fit the default 1.2 MB app partition. If you see "Sketch too big", this setting is the fix.
+- **Port:** it's `/dev/ttyACM0` or `/dev/ttyUSB0` on Linux, `/dev/cu.*` on macOS, and `COMx` on Windows.
+- **Linux permissions:** if the upload says permission denied, add yourself to the serial group with `sudo usermod -aG dialout $USER`, then log out and back in.
+- **Find the board's address:** after flashing, the serial monitor at 115200 baud prints it, e.g. `connected, IP 192.168.1.50`. Use `arduino-cli monitor -p <port> -c baudrate=115200`.
 
 **Setup mode:** if Wi-Fi isn't set or can't connect, the board creates a Wi-Fi network called `eink-setup`. Join it, open http://192.168.4.1/ and add a line `wifi "network" "password"`.
 
