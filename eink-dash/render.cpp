@@ -1,8 +1,5 @@
 #include "render.h"
 
-#include <algorithm>
-#include <vector>
-
 #define ENABLE_GxEPD2_GFX 0
 #include <GxEPD2_BW.h>
 #include <SPI.h>
@@ -193,60 +190,8 @@ static bool truthy(JsonVariantConst v) {
   return true;
 }
 
-// Splits "a+b+c" into paths.
-static std::vector<String> splitPlus(const String &s) {
-  std::vector<String> out;
-  int start = 0;
-  while (true) {
-    int p = s.indexOf('+', start);
-    String part = s.substring(start, p < 0 ? s.length() : p);
-    part.trim();
-    if (part.length()) out.push_back(part);
-    if (p < 0) break;
-    start = p + 1;
-  }
-  return out;
-}
-
-// if=a+b is true when any of the paths has data.
-static bool condTrue(const String &cond) {
-  for (auto &p : splitPlus(cond))
-    if (truthy(resolvePath(p, JsonVariantConst()))) return true;
-  return false;
-}
-
-// Compares two values numerically when both are numbers, else as text.
-static bool lessValue(JsonVariantConst a, JsonVariantConst b) {
-  if (a.isNull()) return false;
-  if (b.isNull()) return true;
-  bool an = a.is<double>(), bn = b.is<double>();
-  if (an && bn) return a.as<double>() < b.as<double>();
-  String sa = a.is<const char *>() ? String(a.as<const char *>()) : String(a.as<double>());
-  String sb = b.is<const char *>() ? String(b.as<const char *>()) : String(b.as<double>());
-  return sa < sb;
-}
-
-// Collects list items from one or more arrays (items=a+b), optionally sorted.
-static std::vector<JsonVariantConst> collectItems(const Widget &w) {
-  std::vector<JsonVariantConst> items;
-  for (auto &p : splitPlus(w.items)) {
-    JsonVariantConst v = resolvePath(p, JsonVariantConst());
-    if (v.is<JsonArrayConst>())
-      for (JsonVariantConst e : v.as<JsonArrayConst>()) items.push_back(e);
-    else if (v.is<JsonObjectConst>())
-      items.push_back(v);  // some APIs return one object instead of a list of one
-  }
-  if (w.sortKey.length()) {
-    String key = w.sortKey;
-    std::stable_sort(items.begin(), items.end(), [&](JsonVariantConst a, JsonVariantConst b) {
-      return lessValue(resolvePath("item." + key, a), resolvePath("item." + key, b));
-    });
-  }
-  return items;
-}
-
 static void drawWidget(const Widget &w) {
-  if (w.cond.length() && condTrue(w.cond) == w.condNegate) return;
+  if (w.cond.length() && truthy(resolvePath(w.cond, JsonVariantConst())) == w.condNegate) return;
   uint16_t color = w.white ? GxEPD_WHITE : GxEPD_BLACK;
   int x = px(w.n[0]), y = py(w.n[1]);
   switch (w.type) {
@@ -266,10 +211,16 @@ static void drawWidget(const Widget &w) {
       break;
     }
     case W_LIST: {
-      // No items = draw nothing (pair with an `unless=` text for a message).
+      JsonVariantConst arr = resolvePath(w.items, JsonVariantConst());
       int step = w.spacing ? w.spacing : findFont(w.font)->yAdvance * w.size;
+      if (!arr.is<JsonArrayConst>()) {
+        // A single object (some APIs return one item instead of a list of one).
+        // Missing = no items: draw nothing (pair with an `unless=` text for a message).
+        if (arr.is<JsonObjectConst>()) drawText(expandTemplate(w.tmpl, arr), x, y, w);
+        break;
+      }
       int i = 0;
-      for (JsonVariantConst item : collectItems(w)) {
+      for (JsonVariantConst item : arr.as<JsonArrayConst>()) {
         if (i >= w.maxItems) break;
         drawText(expandTemplate(w.tmpl, item), x, y + i * step, w);
         i++;

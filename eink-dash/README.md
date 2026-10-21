@@ -63,7 +63,7 @@ rect X Y W H [fill] [radius=R] [color=black|white]
 Coordinates are measured from the top-left of the **visible area**, i.e. inside the `margin`. **Negative X/Y count from the right/bottom visible edge**, so `text -10 -10 align=right "${ip}"` hugs the bottom-right corner. A `rect` width or height of 0 or less stretches to that many pixels before the far edge: `rect 0 0 0 0` outlines the whole visible area.
 For text, X,Y is the **left end of the baseline**. With `align=center` or `align=right`, X is the centre or right edge instead.
 Options: `font=` `size=` (1–10, scales the font up) `align=left|center|right` `color=black|white`.
-A `list` repeats its template for each element of a JSON array, moving down one row each time. If the array is missing or empty, it draws nothing. To merge several arrays, even from different sources, join them with `+`: `items=bus.bustime-response.prd+bus172.bustime-response.prd`. Add `sort=prdtm` to order the merged list by a field (numbers compare as numbers, everything else alphabetically). `if=`/`unless=` accept `a+b` too, which counts as true when any of them has data.
+A `list` repeats its template for each element of a JSON array, moving down one row each time. If the array is missing or empty, it draws nothing.
 Any widget can take `if=PATH`, so it's drawn only when PATH has data (not missing, false, empty text or an empty list), or `unless=PATH` for the opposite. For example, to show a message when there are no buses:
 `text 370 85 unless=bus.bustime-response.prd "${bus.bustime-response.error[0].msg|default:No buses}"`
 

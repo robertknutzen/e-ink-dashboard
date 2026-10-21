@@ -226,8 +226,6 @@ bool parseConfig(const String &text, Config &out, String &errors) {
         w.maxItems = max(1, (int)v.toInt());
       } else if (k == "items") {
         w.items = v;
-      } else if (k == "sort") {
-        w.sortKey = v;
       } else if (k == "if" || k == "unless") {
         w.cond = v;
         w.condNegate = (k == "unless");

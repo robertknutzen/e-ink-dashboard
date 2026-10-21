@@ -59,7 +59,6 @@ source NAME "URL" every 15m [header "Name: value"]...
 # Widgets  (x,y of text = left end of the baseline)
 text X Y [font=sans12] [size=1] [align=left|center|right] [color=black|white] "template"
 list X Y items=SOURCE.path.to.array [max=10] [spacing=PX] [font=..] "template using ${item.field}"
-     items=a.list+b.list merges several arrays; sort=field orders them
 line X1 Y1 X2 Y2 [color=..]
 any widget: if=PATH (draw only when PATH has data) / unless=PATH (only when it doesn't)
 rect X Y W H [fill] [radius=R] [color=..]

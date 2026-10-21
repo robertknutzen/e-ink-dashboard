@@ -29,8 +29,7 @@ struct Widget {
   int radius = 0;      // rect: rounded corners
   int spacing = 0;     // list: pixels between rows (0 = font line height)
   int maxItems = 10;   // list: max rows
-  String items;        // list: path(s) to JSON arrays, joined with '+'
-  String sortKey;      // list: field to sort merged items by (optional)
+  String items;        // list: path to a JSON array
   String tmpl;         // text/list: template string
   String cond;         // if=/unless= path; empty = always draw
   bool condNegate = false;  // true for unless=
